@@ -6,19 +6,19 @@ alloc_t def_alloc = { malloc, free };
 
 
 /*
-================
+============
 MemInit
-================
+============
 */
 void MemInit( void ) {
 }
 
 /*
-================
-MemRelease
-================
+============
+MemShutdown
+============
 */
-void MemRelease( void ) {
+void MemShutdown( void ) {
 }
 
 /*
@@ -30,6 +30,11 @@ alloc_t* MemDefaultAlloc( void ) {
     return &def_alloc;
 }
 
+/*
+============
+MemStringAlloc
+============
+*/
 alloc_t* MemStringAlloc( void ) {
     return MemDefaultAlloc();
 }

@@ -13,11 +13,20 @@ typedef struct {
 } alloc_t;
 
 
+
 void        MemInit( void );
-void        MemRelease( void );
+// initialize memory
+
+void        MemShutdown( void );
+// finalize memory
+
+
 
 alloc_t*    MemDefaultAlloc( void );
+// get pointer to the default allocator
+
 alloc_t*    MemStringAlloc( void );
+// get pointer to the string allocator
 
 
 
