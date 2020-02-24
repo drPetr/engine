@@ -2,6 +2,8 @@
 #define __STR_BASE_H__
 
 #include <core/types.h>
+#include <core/ecode.h>
+
 
 
 char*   StrCreate( const char* s );
@@ -23,17 +25,13 @@ size_t  StrLen( const char* str );
 bool_t  StrIsNumeric( const char* s );
 // return btrue if str is int value or float value
 
-bool_t  StrIsInt( const char* s );
-// return btrue if str is int value
-
-bool_t  StrIsFloat( const char* s );
-// return bture if str is float value
-
-int     StrToInt( const char* s );
+ecode_t StrToInt( const char* s, const char** end, int* i );
 // parse integer value
+// return values:   E_OK, E_NUMRNG, E_NOTNUM, E_NODATA
 
-float   StrToFloat( const char* s );
+ecode_t StrToFloat( const char* s, const char** end, float* f );
 // parse float value
+// return values:   E_OK, E_NUMRNG, E_NOTNUM, E_NODATA
 
 
 #endif //__STR_BASE_H__
