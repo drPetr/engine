@@ -50,7 +50,7 @@ uint32_t        VarType( const var_t* v );
 bool_t          VarUpdate( var_t* v, const char* val );
 bool_t          VarUpdateLim( var_t* v, const char* lim );
 bool_t          VarUpdateDescr( var_t* v, const char* descr );
-bool_t          VarDelete( var_t* v );
+void            VarDelete( var_t* v );
 
 
 #endif //__base_VAR_H__
