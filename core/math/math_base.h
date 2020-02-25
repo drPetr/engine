@@ -4,14 +4,15 @@
 
 
 const float  PI = 3.14159265358979323846;           // pi
-const float  TWO_PI = PI * 2.0;                     // pi * 2
-const float  HALF_PI = PI / 2.0;                    // pi / 2
-const float  INV_PI = 1.0 / PI;                     // 1 / pi
+//const float  TWO_PI = PI * 2.0;                     // pi * 2
+//const float  HALF_PI = PI / 2.0;                    // pi / 2
+//const float  INV_PI = 1.0 / PI;                     // 1 / pi
 const float  E = 2.71828182845904523536;            // e
 const float  SQRT_TWO = 1.41421356237309504880;     // sqrt( 2 )
 const float  SQRT_THREE = 1.73205080756887729352;   // sqrt( 3 )
 const float  SQRT_HALF = 0.70710678118654752440;    // sqrt( 1 / 2 )
 const float  FLOAT_INFINITY = 1e30;                 // бесконечность
+const float  FLT_INFINITY = 1e30;                   // 
 const float  FLOAT_EPSILON = 1.192092896e-07;       // минимальное число, для которого 
                                                     // выполняется условие 1.0f + FLOAT_EPSILON != 1.0f
 
