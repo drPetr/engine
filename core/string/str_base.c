@@ -59,6 +59,19 @@ size_t StrLen( const char* str ) {
 
 /*
 ============
+StrSkipSpaces
+============
+*/
+void StrSkipSpaces( const char** s ) {
+    if( s && *s ) {
+        while( isspace( **s ) ) {
+            (*s)++;
+        }
+    }
+}
+
+/*
+============
 IsNumeric
 ============
 */
@@ -175,6 +188,7 @@ ecode_t StrToInt( const char* s, const char** end, int* i ) {
     uint32_t prev = v;
     bool_t sign = bfalse;
     
+    // check for data
     if( !s ) {
         return E_NODATA;
     }
@@ -187,6 +201,8 @@ ecode_t StrToInt( const char* s, const char** end, int* i ) {
     // skip sign
     if( *s == '-' ) {
         sign = btrue;
+        s++;
+    } else if( *s == '+' ) {
         s++;
     }
     
@@ -204,7 +220,7 @@ ecode_t StrToInt( const char* s, const char** end, int* i ) {
                     }
                     *end = s;
                 }
-                return E_NUMRNG;
+                goto gorng;
             }
         } while( isdigit( *s ) );
         
@@ -215,7 +231,7 @@ ecode_t StrToInt( const char* s, const char** end, int* i ) {
         
         // check int range
         if( v > ((uint32_t)INT_MAX + sign) ) {
-            return E_NUMRNG;
+            goto gorng;
         }
         
         if( i ) {
@@ -226,14 +242,84 @@ ecode_t StrToInt( const char* s, const char** end, int* i ) {
     }
     
     return E_NOTNUM;
+    
+gorng:
+    // E_NUMRNG error
+    if( *i ) {
+        *i = sign ? INT_MIN : INT_MAX;
+    }
+    return E_NUMRNG;
 }
 
 /*
 ============
 StrToFloat
+
+return values:
+E_OK        if conversion was successful
+E_NOTNUM    if string is not number
+E_NODATA    if string is NULL
 ============
 */
 ecode_t StrToFloat( const char* s, const char** end, float* f ) {
+    //const uint32_t FLT_MNT_MAX = 0x00800000;
+    //uint32_t m = 0;     // mantissa
+    //uint32_t e = 0;     // exponenta
+    bool_t sign = bfalse;    // sign
+    float v = 0.0f;     // value
+    float d = 1.0f;
     
-    return E_NOTNUM;
+    // check for data
+    if( !s ) {
+        return E_NODATA;
+    }
+    
+    // skip spaces
+    while( isspace( *s ) ) {
+        s++;
+    }
+    
+    // skip sign
+    if( *s == '-' ) {
+        sign = btrue;
+        s++;
+    } else if( *s == '+' ) {
+        s++;
+    }
+    
+    // scan number
+    if( isdigit( *s ) ) {
+        do {
+            v = v * 10.0f + (float)((*s) - '0');
+            
+            // check mantissa limits
+            // check int limits
+            
+            s++;
+        } while( isdigit( *s ) );
+        // skip dot
+        if( *s == '.' ) {
+            s++;
+        }
+        while( isdigit( *s ) ) {
+            d *= 10.0f;
+            v = v + (float)((*s) - '0') / d;
+            s++;
+        }
+    } else {
+        return E_NOTNUM;
+    }
+    
+    // set end ptr
+    if( end ) {
+        *end = s;
+    }
+    
+    // set value
+    if( *f ) {
+        *f = v;
+        *((uint32_t*)f) = *((uint32_t*)f) | sign << 31;
+    }
+    
+    return E_OK;
 }

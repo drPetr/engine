@@ -22,6 +22,9 @@ char*   StrCpy( char* dst, const char* src );
 size_t  StrLen( const char* str );
 // return length of the string
 
+void    StrSkipSpaces( const char** s );
+// skip all spaces
+
 bool_t  StrIsNumeric( const char* s );
 // return btrue if str is int value or float value
 
@@ -31,7 +34,7 @@ ecode_t StrToInt( const char* s, const char** end, int* i );
 
 ecode_t StrToFloat( const char* s, const char** end, float* f );
 // parse float value
-// return values:   E_OK, E_NUMRNG, E_NOTNUM, E_NODATA
+// return values:   E_OK, E_NOTNUM, E_NODATA
 
 
 #endif //__STR_BASE_H__
