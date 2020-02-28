@@ -267,6 +267,56 @@ bool_t VarUpdate( var_t* v, const char* val ) {
 
 /*
 ============
+VarUpdateInt
+============
+*/
+bool_t VarUpdateInt( var_t* v, int i ) {
+    if( VarType( v ) == VAR_INT ) {
+        // check for prev value
+        if( i == v->i ) {
+            return btrue;
+        }
+        // update
+        if( i > v->imax ) {
+            v->i = v->imax;
+        } else if( i < v->imin ) {
+            v->i = v->imin;
+        } else {
+            v->i = i;
+        }
+        v->upd++;
+        return btrue;
+    }
+    return bfalse;
+}
+
+/*
+============
+VarUpdateFloat
+============
+*/
+bool_t VarUpdateFloat( var_t* v, float f ) {
+    if( VarType( v ) == VAR_FLT ) {
+        // check for prev value
+        if( f == v->f ) {
+            return btrue;
+        }
+        // update
+        if( f > v->fmax ) {
+            v->f = v->fmax;
+        } else if( f < v->fmin ) {
+            v->f = v->fmin;
+        } else {
+            v->f = f;
+        }
+        v->upd++;
+        return btrue;
+    }
+    return bfalse;
+}
+
+/*
+============
 VarUpdateLim
 ============
 */

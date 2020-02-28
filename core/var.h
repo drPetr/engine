@@ -50,6 +50,8 @@ var_t*          VarCreate( const char* name, uint32_t flags, const char* val, co
 var_t*          VarFind( const char* name );
 uint32_t        VarType( const var_t* v );
 bool_t          VarUpdate( var_t* v, const char* val );
+bool_t          VarUpdateInt( var_t* v, int i );
+bool_t          VarUpdateFloat( var_t* v, float f );
 bool_t          VarUpdateLim( var_t* v, const char* lim );
 bool_t          VarUpdateDescr( var_t* v, const char* descr );
 void            VarDelete( var_t* v );
