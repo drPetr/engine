@@ -7,6 +7,7 @@
 #include <core/memory.h>
 #include <renderer/gl/gl.h>
 #include <windows.h>
+
  
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
@@ -188,19 +189,7 @@ void WinShow( void ) {
 
 
     
-const char vertexShaderSrc[] =
-"#version 330 core\n"
-"layout (location = 0) in vec3 position;\n"
-"void main() {\n"
-"    gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-"}\n";
 
-const char fragmentShaderSrc[] =
-"#version 330 core\n"
-"out vec4 color;\n"
-"void main() {\n"
-"    color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-"}\n";
 
 
 void inf() {
@@ -224,7 +213,31 @@ int WINAPI WinMain(HINSTANCE hInstance,
     GLuint fsh; // fragment shader
     GLuint psh; // shader program
     GLint code;
-                    
+          
+    const char vertexShaderSrc[] =
+        "#version 330 core\n"
+        "layout (location = 0) in vec3 position;\n"
+        "void main() {\n"
+        "    gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
+        "}\n";
+
+    const char fragmentShaderSrc[] =
+        "#version 330 core\n"
+        "out vec4 color;\n"
+        "void main() {\n"
+        "    color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+        "}\n";
+
+    
+    char* str1 = (char*)malloc( StrLen( vertexShaderSrc ) + 1 );
+    char* str2 = (char*)malloc( StrLen( fragmentShaderSrc ) + 1 );
+
+    GLchar** vshsrc = &str1;
+    GLchar** fshsrc = &str2;;
+    
+    StrCpy( str1, vertexShaderSrc );
+    StrCpy( str2, fragmentShaderSrc );
+
     GLuint vao;
     GLuint quadvbo;
     //GLuint glprogram;   // shader
@@ -246,7 +259,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
     // vertex shader
     vsh = glCreateShader( GL_VERTEX_SHADER );
-    glShaderSource( vsh, 1, (const char**)&vertexShaderSrc, NULL );
+    glShaderSource( vsh, 1, (const GLchar**)vshsrc, NULL );
     glCompileShader( vsh );
     glGetShaderiv( vsh, GL_COMPILE_STATUS, &code );
     if( !code ) {
@@ -258,7 +271,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     
     // fragment shader
     fsh = glCreateShader( GL_FRAGMENT_SHADER );
-    glShaderSource( fsh, 1, (const char**)&fragmentShaderSrc, NULL );
+    glShaderSource( fsh, 1, (const GLchar**)fshsrc, NULL );
     glCompileShader( fsh );
     glGetShaderiv( fsh, GL_COMPILE_STATUS, &code );
     if( !code ) {
@@ -290,6 +303,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0 );
     glEnableVertexAttribArray( 0 );
 
+    glClearColor( 0.3f, 0.3f, 0.3f, 0.0f );
 
     while( common.run ) {
         WinProcess();
@@ -304,7 +318,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 
         glUseProgram( psh );
         
-        //glDrawBuffer( vbo );
+        glDrawArrays( GL_TRIANGLES, 0, 3 ); 
         
         SwapBuffers( common.hDC );
         Sleep (1);
