@@ -1,33 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <core/var.h>
 #include <core/string.h>
 #include <core/types.h>
 #include <core/memory.h>
-#include <renderer/bitmap/bitmap.h>
-/*
-var_t* s_vol;
-var_t* s_mouse;
-
-int main( int argc, char** argv ) {
-*/    /*VarInit();
-    char scl[] = "warning";
-
-    s_vol = VarCreate( "s_vol", VAR_FLT, "0.8", "0;100", "sound volume" );
-    s_mouse = VarCreate( "s_mouse", VAR_FLT, "0.5", "0;1", "sound volume" );
-
-    VarUpdate( s_vol, "22.412323" );
-
-    printf( "name: %s; val: %f [%f;%f]\n", s_vol->name, s_vol->f, s_vol->fmin, s_vol->fmax );
-    printf( "name: %s; val: %f [%f;%f]\n", s_mouse->name, s_mouse->f, s_mouse->fmin, s_mouse->fmax );
-    //printf( "%d\n", s_vol->upd );
-
-    VarShutdown();
-    return 0;*//*
-}*/
-
+#include <renderer/gl/gl.h>
 #include <windows.h>
-#include <gl/glext.h>
  
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
@@ -205,49 +184,52 @@ void WinShow( void ) {
     ShowWindow( common.hWnd, common.nCmdShow );
 }
 
-typedef struct {
-    void*           data;
-    uint32_t        tex;
-    uint32_t        width;
-    uint32_t        height;
-    bitmap_t        bmp;
-} texture_t;
 
-#include <stdio.h>
-/*
-============
-RLoadTextureFromFile
-============
-*/
-void RLoadTextureFromFile( texture_t* tex, const char* filename ) {
-    FILE* f = fopen( filename, "rb" );
-    if( f ) {
-        BitmapLoadFromFile( f,  &(tex->bmp) );
-        fclose(f);
-        
-        tex->data = tex->bmp.data;
-        tex->width = tex->bmp.width;
-        tex->height = tex->bmp.height;
-        
-        glActiveTexture(GL_TEXTURE1);
-        glGenTextures( 1, &(tex->tex) );
-        glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB, tex->width, tex->height, 0, GL_BGR, GL_UNSIGNED_BYTE, tex->data );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR );
-        glGenerateMipmap( GL_TEXTURE_2D );
-        glBindTexture( GL_TEXTURE_2D, &(tex->tex) );
-    }
+
+
+    
+const char vertexShaderSrc[] =
+"#version 330 core\n"
+"layout (location = 0) in vec3 position;\n"
+"void main() {\n"
+"    gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
+"}\n";
+
+const char fragmentShaderSrc[] =
+"#version 330 core\n"
+"out vec4 color;\n"
+"void main() {\n"
+"    color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"}\n";
+
+
+void inf() {
+    static int ok = 1;
+    printf( "ok %d\n", ok++ );
 }
-
-
 
 int WINAPI WinMain(HINSTANCE hInstance,
                    HINSTANCE hPrevInstance,
                    LPSTR lpCmdLine,
                    int nCmdShow)
 {
-    float a;
-    texture_t tex;
+                    
+    const float prim[] = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f,  -0.5f, 0.0f,
+        0.0f,   0.5f, 0.0f
+    };
+    GLuint vbo; // vertex buffer objects (VBO)
+    GLuint vsh; // vertex shader
+    GLuint fsh; // fragment shader
+    GLuint psh; // shader program
+    GLint code;
+                    
+    GLuint vao;
+    GLuint quadvbo;
+    //GLuint glprogram;   // shader
+
+    char log[1024];
     
     CommonInit( hInstance, nCmdShow );
     WinInitWindow();
@@ -255,60 +237,81 @@ int WINAPI WinMain(HINSTANCE hInstance,
     RendererInit();
     WinShow();
 
+
+    // объекты вершинного буфера (vertex buffer objects (VBO))
+    glGenBuffers( 1, &vbo );
+    glBindBuffer( GL_ARRAY_BUFFER, vbo ); 
+    glBufferData( GL_ARRAY_BUFFER, sizeof(prim), prim, GL_STATIC_DRAW );
+
+
+    // vertex shader
+    vsh = glCreateShader( GL_VERTEX_SHADER );
+    glShaderSource( vsh, 1, (const char**)&vertexShaderSrc, NULL );
+    glCompileShader( vsh );
+    glGetShaderiv( vsh, GL_COMPILE_STATUS, &code );
+    if( !code ) {
+        glGetShaderInfoLog( vsh, sizeof(log), NULL, log );
+        printf( "error: cannot compile vertex shader\n" );
+        printf( "%s\n", log );
+    }
     
-    RLoadTextureFromFile( &tex, "bitmap.bmp" );
     
-    a = 0.0f;
-    /* program main loop */
+    // fragment shader
+    fsh = glCreateShader( GL_FRAGMENT_SHADER );
+    glShaderSource( fsh, 1, (const char**)&fragmentShaderSrc, NULL );
+    glCompileShader( fsh );
+    glGetShaderiv( fsh, GL_COMPILE_STATUS, &code );
+    if( !code ) {
+        glGetShaderInfoLog( fsh, sizeof(log), NULL, log );
+        printf( "error: cannot compile fragment shader\n" );
+        printf( "%s\n", log );
+    }
+
+
+    // make shader program
+    psh = glCreateProgram();
+    glAttachShader( psh, vsh );
+    glAttachShader( psh, fsh );
+    glLinkProgram( psh );
+    glGetProgramiv( psh, GL_LINK_STATUS, &code );
+    if( !code ) {
+        glGetProgramInfoLog( psh, sizeof(log), NULL, log );
+        printf( "error: cannot make shader program\n" );
+        printf( "%s\n", log );
+    }
+    
+    
+    // delete shaders
+    glDeleteShader( vsh );
+    glDeleteShader( fsh );
+    
+    
+    // 
+    glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0 );
+    glEnableVertexAttribArray( 0 );
+
+
     while( common.run ) {
         WinProcess();
-        
-        glViewport( 0, 0, width_g->i, height_g->i );
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        //glFrustum( -100, 100, -100, 100, -100, 10 );
-        
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear( GL_COLOR_BUFFER_BIT );
-        glEnable(GL_TEXTURE_2D);
-        glActiveTexture(GL_TEXTURE1);
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture( GL_TEXTURE_2D, &tex.tex );
-        glPushMatrix();
-        //
-        glScalef( 1.0f / (float)width_g->i, 1.0f / (float)height_g->i, 1.0f );
-
-        //glEnable(GL_SMOOTH);
-
+        glViewport( 0, 0, width_g->i, height_g->i );
+        //glScalef( 1.0f / (float)width_g->i, 1.0f / (float)height_g->i, 1.0f );
         
-        glRotatef( a, 0.0f, 0.0f, 1.0f );
-
-        glBegin( GL_QUADS );
+        glBindBuffer( GL_ARRAY_BUFFER, vbo );
+        glBufferData( GL_ARRAY_BUFFER, sizeof(prim), prim, GL_STATIC_DRAW );
         
-            
-            glTexCoord2f( 0.0f, 0.0f );
-            glVertex2f( 0.0f, 0.0f );
-            
-            glTexCoord2f( 0.0f, 1.0f );
-            glVertex2f( 0.0f, 350.0f );
-            
-            glTexCoord2f( 1.0f, 0.0f );
-            glVertex2f( 350.0f, 0.0f );
-            
-            glTexCoord2f( 1.0f, 1.0f );
-            glVertex2f( 350.0f, 350.0f );
-            
+        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0 );
 
-        glEnd();
-
-
-        glPopMatrix();
-
+        glUseProgram( psh );
+        
+        //glDrawBuffer( vbo );
+        
         SwapBuffers( common.hDC );
-
         Sleep (1);
-        a += 3.0f;
     }
+    
+    glDeleteBuffers( 1, &quadvbo );
+    glDeleteVertexArrays( 1, &vao );
 
     RendererShutdown();
     WinShutdown();
