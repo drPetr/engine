@@ -1,29 +1,24 @@
 #ifndef __ASSERT_H__
 #define __ASSERT_H__
 
-#include <stdlib.h>
-#include <stdio.h>
+void __impl_assert( int e, const char* expr, const char* file, int line );
+void __impl_asserta( int e, const char* expr, const char* file, int line, const char* fmt, ... );
+void __impl_verify( int e, const char* expr, const char* file, int line );
+void __impl_verifya( int e, const char* expr, const char* file, int line, const char* fmt, ... );
 
-#ifdef NO_ASSERT
+
+#if defined(DEBUG) || defined(_DEBUG)
     #define assert(e)
     #define asserta(e,a,...)
+    #define assert_not_null(e)
 #else
-    #define assert(e)                                           \
-        if(!(e)){                                               \
-            fprintf(stderr, "assertion failed: %s\n", #e);      \
-            fprintf(stderr, "file: %s\n", __FILE__);            \
-            fprintf(stderr, "line: %d\n", __LINE__);            \
-            abort();                                            \
-        } else (void)(0)
-    #define asserta(e,a,...)     do {                           \
-        if(!(e)){                                               \
-            fprintf(stderr, "assertion failed: %s\n", #e);      \
-            fprintf(stderr, "file: %s\n", __FILE__);            \
-            fprintf(stderr, "line: %d\n", __LINE__);            \
-            fprintf(stderr, a, ##__VA_ARGS__);                  \
-            abort();                                            \
-        }                                                       \
-    } while(0)
+    #define assert(e) __impl_assert( (int)(!!(e)), #e, __FILE__, __LINE__ )
+    #define asserta(e,a,...) __impl_asserta( (int)(!!(e)), #e, __FILE__, __LINE__, a, ##__VA_ARGS__ )
+    #define assert_not_null(e) __impl_asserta( (int)(!!(e)), #e, __FILE__, __LINE__, "%s", "pointer cannot be null" )
 #endif
+
+#define verify(e) __impl_verify( (int)(!!(e)), #e, __FILE__, __LINE__ )
+#define verifya(e,a,...) __impl_verifya( (int)(!!(e)), #e, __FILE__, __LINE__, a, ##__VA_ARGS__ )
+#define verify_not_null(e) __impl_verifya( (int)(!!(e)), #e, __FILE__, __LINE__, "%s", "pointer cannot be null" )
 
 #endif // __ASSERT_H__
