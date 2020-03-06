@@ -7,6 +7,7 @@
 #include <core/memory.h>
 #include <renderer/gl/gl.h>
 #include <windows.h>
+#include <core/fs.h>
 
  
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
@@ -90,7 +91,7 @@ void WinCreateWindow( void ) {
     common.hWnd = CreateWindowEx(
         0,
         "ClassWndEngineApp",
-        "Wngine",
+        "engine",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT,
         CW_USEDEFAULT,
@@ -188,14 +189,115 @@ void WinShow( void ) {
 
 
 
+
+
+/*
+FsFprintf();
+FsVfprintf();
+FsFgetc();
+FsGets();
+
+int FsCreate( const char* fileName, uint32_t flags );
+int FsRemove( const char* fileName );
+FsRename( const char* fileName, const char* newFileName );
+*/
+
+#include <stdlib.h>
+
+
+char* LoadFileData( const char* fileName ) {
+    file_t* f;
+    char* str;
+    size_t size;
     
-
-
-
-void inf() {
-    static int ok = 1;
-    printf( "ok %d\n", ok++ );
+    if( NULL == (f = FsFOpen( fileName, F_READ | F_LOCAL )) ) {
+        return NULL;
+    }
+    
+    size = FsFSize( f );
+    str = malloc( size + 100 );
+    FsFRead( str, size, f );
+    str[size] = 0;
+    FsFClose( f );
+    
+    return str;
 }
+
+void DeleteFileData( char* str ) {
+    free( str );
+}
+
+
+
+GLuint LoadShader( const char* fileName, GLenum type ) {
+    
+    GLuint sh;
+    GLint code;
+    char log[1024];
+    char* shsrc;
+    
+    // vertex shader
+    shsrc = LoadFileData( fileName );
+    if( shsrc == NULL ) {
+        printf( "error: cannot load shader '%s'\n", fileName );
+        DeleteFileData( shsrc );
+        return 0;
+    }
+    
+    sh = glCreateShader( type );
+    glShaderSource( sh, 1, (const GLchar**)&shsrc, NULL );
+    glCompileShader( sh );
+    glGetShaderiv( sh, GL_COMPILE_STATUS, &code );
+    if( !code ) {
+        glGetShaderInfoLog( sh, sizeof(log), NULL, log );
+        printf( "error: cannot compile shader\n" );
+        printf( "%s\n", log );
+        glDeleteShader( sh );
+        sh = 0;   
+    }
+    
+    DeleteFileData( shsrc );
+    
+    return sh;
+}
+
+
+GLuint LoadShaderProgram( const char* vshName, const char* pshName ) {
+    GLuint vsh;
+    GLuint psh;
+    GLuint program = 0;
+    GLint code;
+    char log[1024];
+    
+    vsh = LoadShader( vshName, GL_VERTEX_SHADER );
+    psh = LoadShader( pshName, GL_FRAGMENT_SHADER );
+    
+    if( vsh == 0 || psh == 0 ) {
+        goto goret;
+    }
+    
+    program = glCreateProgram();
+    glAttachShader( program, vsh );
+    glAttachShader( program, psh );
+    glLinkProgram( program );
+    glGetProgramiv( program, GL_LINK_STATUS, &code );
+    if( !code ) {
+        glGetProgramInfoLog( program, sizeof(log), NULL, log );
+        printf( "error: cannot make shader program\n" );
+        printf( "%s\n", log );
+    }
+    
+goret:
+    if( vsh ) {
+        glDeleteShader( vsh );
+    }
+    if( psh ) {
+        glDeleteShader( psh );
+    }
+   
+    return program;
+}
+
 
 int WINAPI WinMain(HINSTANCE hInstance,
                    HINSTANCE hPrevInstance,
@@ -204,45 +306,16 @@ int WINAPI WinMain(HINSTANCE hInstance,
 {
                     
     const float prim[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f,  -0.5f, 0.0f,
+        -0.5f, -0.5f, 1.0f,
+        0.5f,  -0.5f, -1.0f,
         0.0f,   0.5f, 0.0f
     };
+    
     GLuint vbo; // vertex buffer objects (VBO)
-    GLuint vsh; // vertex shader
-    GLuint fsh; // fragment shader
     GLuint psh; // shader program
-    GLint code;
-          
-    const char vertexShaderSrc[] =
-        "#version 330 core\n"
-        "layout (location = 0) in vec3 position;\n"
-        "void main() {\n"
-        "    gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-        "}\n";
-
-    const char fragmentShaderSrc[] =
-        "#version 330 core\n"
-        "out vec4 color;\n"
-        "void main() {\n"
-        "    color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-        "}\n";
-
-    
-    char* str1 = (char*)malloc( StrLen( vertexShaderSrc ) + 1 );
-    char* str2 = (char*)malloc( StrLen( fragmentShaderSrc ) + 1 );
-
-    GLchar** vshsrc = &str1;
-    GLchar** fshsrc = &str2;;
-    
-    StrCpy( str1, vertexShaderSrc );
-    StrCpy( str2, fragmentShaderSrc );
-
     GLuint vao;
     GLuint quadvbo;
     //GLuint glprogram;   // shader
-
-    char log[1024];
     
     CommonInit( hInstance, nCmdShow );
     WinInitWindow();
@@ -256,48 +329,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     glBindBuffer( GL_ARRAY_BUFFER, vbo ); 
     glBufferData( GL_ARRAY_BUFFER, sizeof(prim), prim, GL_STATIC_DRAW );
 
-
-    // vertex shader
-    vsh = glCreateShader( GL_VERTEX_SHADER );
-    glShaderSource( vsh, 1, (const GLchar**)vshsrc, NULL );
-    glCompileShader( vsh );
-    glGetShaderiv( vsh, GL_COMPILE_STATUS, &code );
-    if( !code ) {
-        glGetShaderInfoLog( vsh, sizeof(log), NULL, log );
-        printf( "error: cannot compile vertex shader\n" );
-        printf( "%s\n", log );
-    }
-    
-    
-    // fragment shader
-    fsh = glCreateShader( GL_FRAGMENT_SHADER );
-    glShaderSource( fsh, 1, (const GLchar**)fshsrc, NULL );
-    glCompileShader( fsh );
-    glGetShaderiv( fsh, GL_COMPILE_STATUS, &code );
-    if( !code ) {
-        glGetShaderInfoLog( fsh, sizeof(log), NULL, log );
-        printf( "error: cannot compile fragment shader\n" );
-        printf( "%s\n", log );
-    }
-
-
-    // make shader program
-    psh = glCreateProgram();
-    glAttachShader( psh, vsh );
-    glAttachShader( psh, fsh );
-    glLinkProgram( psh );
-    glGetProgramiv( psh, GL_LINK_STATUS, &code );
-    if( !code ) {
-        glGetProgramInfoLog( psh, sizeof(log), NULL, log );
-        printf( "error: cannot make shader program\n" );
-        printf( "%s\n", log );
-    }
-    
-    
-    // delete shaders
-    glDeleteShader( vsh );
-    glDeleteShader( fsh );
-    
+    psh = LoadShaderProgram( "shader.vsh", "shader.psh" );
     
     // 
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0 );
