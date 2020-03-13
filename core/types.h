@@ -24,5 +24,7 @@ typedef unsigned char       bool_t;
 #define btrue               ((bool_t)1)
 #define bfalse              ((bool_t)0)
 
+#define BIT(n)              (1<<(n))
+
 
 #endif //__base_TYPES_H__
