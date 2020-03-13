@@ -41,6 +41,15 @@ int StrCmp( const char* s1, const char* s2 ) {
 
 /*
 ============
+StrCmp
+============
+*/
+int StrNCmp( const char* s1, const char* s2, size_t num ) {
+    return strncmp( s1, s2, num );
+}
+
+/*
+============
 StrCpy
 ============
 */

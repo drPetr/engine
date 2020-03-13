@@ -16,6 +16,11 @@ int     StrCmp( const char* s1, const char* s2 );
 // compare two string and return -1 if s1 is less than s2,
 // or 1 if s1 is more than s2, or 0 if s1 is equal to s2
 
+int     StrNCmp( const char* s1, const char* s2, size_t num );
+// compares the first num characters of the string s1 with the first num 
+// characters of the string s2, and return -1 if s1 is less than s2,
+// or 1 if s1 is more than s2, or 0 if s1 is equal to s2
+
 char*   StrCpy( char* dst, const char* src );
 // copy string from src to dst
 
@@ -35,6 +40,7 @@ ecode_t StrToInt( const char* s, const char** end, int* i );
 ecode_t StrToFloat( const char* s, const char** end, float* f );
 // parse float value
 // return values:   E_OK, E_NOTNUM, E_NODATA
+
 
 
 #endif //__STR_BASE_H__
