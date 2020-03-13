@@ -8,7 +8,7 @@
 #include <renderer/gl/gl.h>
 #include <windows.h>
 #include <core/fs.h>
-
+#include <core/debug.h>
  
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
@@ -210,15 +210,15 @@ char* LoadFileData( const char* fileName ) {
     char* str;
     size_t size;
     
-    if( NULL == (f = FsFOpen( fileName, F_READ | F_LOCAL )) ) {
+    if( NULL == (f = FileOpen( fileName, F_READ | F_LOCAL )) ) {
         return NULL;
     }
     
-    size = FsFSize( f );
+    size = FileSize( f );
     str = malloc( size + 100 );
-    FsFRead( str, size, f );
+    FileRead( str, size, f );
     str[size] = 0;
-    FsFClose( f );
+    FileClose( f );
     
     return str;
 }
@@ -298,14 +298,221 @@ goret:
     return program;
 }
 
+enum varInfoFlags_t {
+    INFO_INT8       = 0x01,
+    INFO_UINT8      = 0x02,
+    INFO_INT16      = 0x03,
+    INFO_UINT16     = 0x04,
+    INFO_INT32      = 0x05,
+    INFO_UINT32     = 0x06,
+    INFO_INT64      = 0x07,
+    INFO_UINT64     = 0x08,
+    INFO_FLT        = 0x09,
+    INFO_DBL        = 0x0a,
+    INFO_TYPE_MASK  = 0xff,
+    
+    INFO_HEX_VIEW   = 0x200
+};
 
+
+
+typedef struct infoVar_t {
+    uint32_t    flags;
+    uint32_t    indent;
+    char        varName[32];
+    char        varDescr[64];
+    struct infoVar_t*    next;
+} infoVar_t;
+
+
+
+typedef struct {
+    infoVar_t*      first;
+    infoVar_t*      last;
+} infoStruct_t;
+
+
+
+void InfoVarAppend( infoStruct_t* info, const char* name, const char* descr, uint32_t indent, uint32_t flags ) {
+    infoVar_t* last = info->last;
+    
+    if( !last ) {
+        info->first = (infoVar_t*)malloc( sizeof(infoVar_t) );
+        info->last = info->first;
+        last = info->first;
+    } else {
+        info->last->next = (infoVar_t*)malloc( sizeof(infoVar_t) );
+        info->last = info->last->next;
+        last = info->last;
+    }
+    
+    last->flags = flags;
+    last->indent = indent;
+    StrCpy( last->varName, name );
+    StrCpy( last->varDescr, descr );
+    last->next = NULL;
+}
+
+
+
+void VarInfo( infoStruct_t* info, const void* ptr ) {
+    infoVar_t* vinfo = info->first;
+    char* p = (char*)ptr;
+    
+    while( vinfo ) {
+        
+        printf( "%s: ", vinfo->varName );
+        
+        switch( vinfo->flags & INFO_TYPE_MASK ) {
+            case INFO_INT8:
+                printf( "%d", (int32_t)(*(int8_t*)p) );
+                break;
+            case INFO_UINT8:
+                printf( "%u", (uint32_t)(*(uint8_t*)p) );
+                break;
+            case INFO_INT16:
+                printf( "%d", (int32_t)(*(int16_t*)p) );
+                break;
+            case INFO_UINT16:
+                printf( "%u", (uint32_t)(*(uint16_t*)p) );
+                break;
+            case INFO_INT32:
+                printf( "%d", (int32_t)(*(int32_t*)p) );
+                break;
+            case INFO_UINT32:
+                 printf( "%u", (uint32_t)(*(uint32_t*)p) );
+                break;
+            case INFO_INT64:
+                break;
+            case INFO_UINT64:
+                break;
+            case INFO_FLT:
+                break;
+            case INFO_DBL:
+                break;
+            default:
+                printf( "error: unknown typename\n" );
+                goto gonext;
+                break;
+        }
+        
+        printf( "\n" );
+        
+gonext:
+        vinfo = vinfo->next;
+    }
+}
+
+
+
+
+
+
+void PrintZipLocalHeader( zipLocalHeader_t* h ) {
+    // uint32_t        signature;      // local file header signature (0x04034b50)
+    printf( "signature: %x\n", h->signature );
+    // uint16_t        extractVer;     // version needed to extract
+    printf( "extractVer: %u\n", h->extractVer );
+    // uint16_t        flags;          // general purpose bit flag
+    printf( "flags: %u\n", h->flags );
+    // uint16_t        compress;       // compression method
+    printf( "compress: %u\n", h->compress );
+    // uint16_t        ftime;          // last mod file time
+    printf( "ftime: %u\n", h->ftime );
+    // uint16_t        fdate;          // last mod file date
+    printf( "fdate: %u\n", h->fdate );
+    // uint32_t        crc32;          // crc-32
+    printf( "crc32: %x\n", h->crc32 );
+    // uint32_t        compressSize;   // compressed size
+    printf( "compressSize: %u\n", h->compressSize );
+    // uint32_t        uncompressSize; // uncompressed size
+    printf( "uncompressSize: %u\n", h->uncompressSize );
+    // uint16_t        fnameLen;       // file name length
+    printf( "fnameLen: %u\n", h->fnameLen );
+    // uint16_t        extraLen;       // extra field length
+    printf( "extraLen: %u\n", h->extraLen );
+}
+
+void PrintEndOfCD( zipEndOfCD_t* e ) {
+    // uint32_t        signature;      // end of central dir signature (0x06054b50)
+    printf( "signature: %x\n", e->signature );
+    // uint16_t        diskNum;        // number of this disk
+    printf( "diskNum: %u\n", e->diskNum );
+    // uint16_t        diskNumCD;      // number of the disk with the start of the central directory
+    printf( "diskNumCD: %u\n", e->diskNumCD );
+    // uint16_t        totalNumInDisk; // total number of entries in the central directory on this disk
+    printf( "totalNumInDisk: %u\n", e->totalNumInDisk );
+    // uint16_t        totalNumInCD;   // total number of entries in the central directory
+    printf( "totalNumInCD: %u\n", e->totalNumInCD );
+    // uint32_t        sizeOfCD;       // size of the central directory
+    printf( "sizeOfCD: %u\n", e->sizeOfCD );
+    // uint32_t        offset;         // offset of start of central directory with respect to the starting disk number
+    printf( "offset: %u\n", e->offset );
+    // uint16_t        comLen;         // ZIP file comment length
+    printf( "comLen: %u\n", e->comLen );
+}
+
+
+/*
+============
+ZipProc
+============
+*/
+int ZipProc( file_t* f, const zipLocalHeader_t* lfh, ssize_t offset, 
+            const char* fileName, const char* extra, void* userData ) {
+    
+    //printf( "%s\n", fileName );
+    
+    return 0;
+}
+
+
+
+
+
+int main( int argc, char** argv ) {
+    file_t* file;
+    file_t* f;
+    ecode_t e;
+    
+    // open the file
+    if( NULL == (file = FileOpen( "data/test.zip", F_LOCAL | F_READ | F_BINARY )) ) {
+        printf( "error: cannot open file 'data/test.zip'\n" );
+        return 0;
+    }
+    
+    // open the file
+    if( NULL == (f = FileOpen( "data/test.zip", F_LOCAL | F_READ | F_BINARY )) ) {
+        printf( "error: cannot open file 2 'data/test.zip'\n" );
+        return 0;
+    }
+    
+    if( E_OK != (e = ZipCheck( file )) ) {
+        printf( "e_error: %d\n", e );
+    }
+    if( E_OK != (e = ZipProcess( file, ZipProc, NULL )) ) {
+        printf( "e_error: %d\n", e );
+    }
+    
+    FileClose( file );
+    FileClose( f );
+    
+    return 0;
+}
+
+/*
 int WINAPI WinMain(HINSTANCE hInstance,
                    HINSTANCE hPrevInstance,
                    LPSTR lpCmdLine,
                    int nCmdShow)
 {
-                    
-    const float prim[] = {
+    
+    
+    
+    
+    
+    */
+    /*const float prim[] = {
         -0.5f, -0.5f, 1.0f,
         0.5f,  -0.5f, -1.0f,
         0.0f,   0.5f, 0.0f
@@ -363,8 +570,8 @@ int WINAPI WinMain(HINSTANCE hInstance,
     WinShutdown();
     CommonShutdown();
  
-    return common.exitCode;
-}
+    return common.exitCode;*//*
+}*/
 
 LRESULT CALLBACK WindowProc( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam ) {
     switch( uMsg ) {
