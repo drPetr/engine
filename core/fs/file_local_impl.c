@@ -4,10 +4,10 @@
 
 /*
 ============
-__impl_FsFOpen_local
+__impl_FileOpen_local
 ============
 */
-static file_t* __impl_FsFOpen_local( file_t* f, const char* fileName, uint32_t flags ) {
+static file_t* __impl_FileOpen_local( file_t* f, const char* fileName, uint32_t flags ) {
     char mode[8];
     int i = 0;
 
@@ -16,12 +16,12 @@ static file_t* __impl_FsFOpen_local( file_t* f, const char* fileName, uint32_t f
     // local file on the hard drive
     if( flags & F_READ ) {
         mode[i++] = 'r';
-    } else if( F_WRITE ) {
+    } else if( flags & F_WRITE ) {
         mode[i++] = 'w';
-    } else if( F_APPEND ) {
+    } else if( flags & F_APPEND ) {
         mode[i++] = 'a';
     }
-    if( F_BINARY ) {
+    if( flags & F_BINARY ) {
         mode[i++] = 'b';
     }
     mode[i++] = 0;
@@ -35,10 +35,10 @@ static file_t* __impl_FsFOpen_local( file_t* f, const char* fileName, uint32_t f
 
 /*
 ============
-__impl_FsFClose_local
+__impl_FileClose_local
 ============
 */
-static ecode_t __impl_FsFClose_local( file_t* f ) {
+static ecode_t __impl_FileClose_local( file_t* f ) {
     if( fclose( (FILE*)f->file ) ) {
         return E_BADF;
     }    
@@ -47,10 +47,10 @@ static ecode_t __impl_FsFClose_local( file_t* f ) {
 
 /*
 ============
-__impl_FsFFlush_local
+__impl_FileFlush_local
 ============
 */
-static ecode_t __impl_FsFFlush_local( file_t* f ) {
+static ecode_t __impl_FileFlush_local( file_t* f ) {
     if( fflush( (FILE*)f->file ) ) {
         return E_BADF;
     }
@@ -59,28 +59,28 @@ static ecode_t __impl_FsFFlush_local( file_t* f ) {
 
 /*
 ============
-__impl_FsFRead_local
+__impl_FileRead_local
 ============
 */
-static size_t  __impl_FsFRead_local( void* dst, size_t size, file_t* f ) {
+static size_t  __impl_FileRead_local( void* dst, size_t size, file_t* f ) {
     return fread( dst, 1, size, f->file );
 }
 
 /*
 ============
-__impl_FsFRead_local
+__impl_FileRead_local
 ============
 */
-static size_t  __impl_FsFWrite_local( const void* src, size_t size, file_t* f ) {
+static size_t  __impl_FileWrite_local( const void* src, size_t size, file_t* f ) {
     return fwrite( src, 1, size, (FILE*)f->file );
 }
 
 /*
 ============
-__impl_FsFGetPos_local
+__impl_FileGetPos_local
 ============
 */
-static ecode_t __impl_FsFGetPos_local( file_t* f, int64_t* pos ) {
+static ecode_t __impl_FileGetPos_local( file_t* f, int64_t* pos ) {
     if( fgetpos( (FILE*)f->file, pos ) ) {
         return E_BADF;
     }
@@ -89,10 +89,10 @@ static ecode_t __impl_FsFGetPos_local( file_t* f, int64_t* pos ) {
 
 /*
 ============
-__impl_FsFSeek_local
+__impl_FileSeek_local
 ============
 */
-static ecode_t __impl_FsFSeek_local( file_t* f, int64_t offset, uint32_t origin ) {
+static ecode_t __impl_FileSeek_local( file_t* f, int64_t offset, uint32_t origin ) {
     int o = 0;
     switch( origin ) {
         case F_SEEK_SET:
@@ -116,10 +116,10 @@ static ecode_t __impl_FsFSeek_local( file_t* f, int64_t offset, uint32_t origin 
 
 /*
 ============
-__impl_FsFSetPos_local
+__impl_FileSetPos_local
 ============
 */
-static ecode_t __impl_FsFSetPos_local( file_t* f, const int64_t* pos ) {
+static ecode_t __impl_FileSetPos_local( file_t* f, const int64_t* pos ) {
     if( fsetpos( (FILE*)f->file, pos ) ) {
         return E_BADF;
     }
@@ -128,10 +128,10 @@ static ecode_t __impl_FsFSetPos_local( file_t* f, const int64_t* pos ) {
 
 /*
 ============
-__impl_FsFSetPos_local
+__impl_FileEOF_local
 ============
 */
-static bool_t  __impl_FsEOF_local( file_t* f ) {
+static bool_t  __impl_FileEOF_local( file_t* f ) {
     if( feof( (FILE*)f->file ) ) {
         return btrue;
     }
@@ -140,18 +140,18 @@ static bool_t  __impl_FsEOF_local( file_t* f ) {
 
 /*
 ============
-__impl_FsFSize_local
+__impl_FileSize_local
 ============
 */
-size_t __impl_FsFSize_local( file_t* f ) {
+size_t __impl_FileSize_local( file_t* f ) {
     int64_t pos;
     int64_t size;
     
-    FsFGetPos( f, &pos );
-    FsFSeek( f, 0, F_SEEK_END );
-    FsFGetPos( f, &size );
-    FsFSetPos( f, &pos );
-    FsFSeek( f, pos, F_SEEK_SET );
+    FileGetPos( f, &pos );
+    FileSeek( f, 0, F_SEEK_END );
+    FileGetPos( f, &size );
+    FileSetPos( f, &pos );
+    FileSeek( f, pos, F_SEEK_SET );
     
     return size > 0 ? (size_t)size : 0;
 }
@@ -159,25 +159,25 @@ size_t __impl_FsFSize_local( file_t* f ) {
 
 /*
 ============
-__impl_FsFTell_local
+__impl_FileTell_local
 ============
 */
-ssize_t __impl_FsFTell_local( file_t* f ) {
+ssize_t __impl_FileTell_local( file_t* f ) {
     return (ssize_t)ftell( (FILE*)f->file );
 }
 
 
 // initialize interface for local file
 fileInterface_t fsFileLocalInterface_g = {
-    __impl_FsFOpen_local,
-    __impl_FsFClose_local,
-    __impl_FsFFlush_local,
-    __impl_FsFRead_local,
-    __impl_FsFWrite_local,
-    __impl_FsFGetPos_local,
-    __impl_FsFSeek_local,
-    __impl_FsFSetPos_local,
-    __impl_FsEOF_local,
-    __impl_FsFSize_local,
-    __impl_FsFTell_local
+    __impl_FileOpen_local,
+    __impl_FileClose_local,
+    __impl_FileFlush_local,
+    __impl_FileRead_local,
+    __impl_FileWrite_local,
+    __impl_FileGetPos_local,
+    __impl_FileSeek_local,
+    __impl_FileSetPos_local,
+    __impl_FileEOF_local,
+    __impl_FileSize_local,
+    __impl_FileTell_local
 };

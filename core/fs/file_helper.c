@@ -44,6 +44,7 @@ bool_t FsFileCheckFlags( uint32_t flags ) {
     switch( type ) {
         case F_LOCAL:
         //case F_MEMORY:
+        case F_INNER:
             break;
         default:
             return bfalse;

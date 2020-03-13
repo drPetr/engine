@@ -1,16 +1,37 @@
 #include <core/fs.h>
 #include <core/assert.h>
+#include <core/var.h>
 
 #include "file_helper.h"
 
 #include <stdio.h>
 
+
+var_t* inner_path_g;    // inner_path; use for file system
+
 /*
 ============
-FsFOpen
+FsInit
 ============
 */
-file_t* FsFOpen( const char* fileName, uint32_t flags ) {
+void FsInit( void ) {
+    inner_path_g = VarCreate( "inner_path", VAR_STR, "data/", NULL, "internal path to game archives" );
+}
+
+/*
+============
+FsInit
+============
+*/
+void FsShutdown( void ) {
+}
+
+/*
+============
+FileOpen
+============
+*/
+file_t* FileOpen( const char* fileName, uint32_t flags ) {
     file_t* f;
     
     assert_not_null( fileName );
@@ -23,6 +44,10 @@ file_t* FsFOpen( const char* fileName, uint32_t flags ) {
     switch( flags & F_TYPE_MASK ) {
         case F_LOCAL:
             f->fn = &fsFileLocalInterface_g;
+            break;
+        case F_INNER:
+            FsFileDeallocate( f );
+            return NULL;
             break;
         case F_MEMORY:
             FsFileDeallocate( f );
@@ -44,10 +69,10 @@ file_t* FsFOpen( const char* fileName, uint32_t flags ) {
 
 /*
 ============
-FsFClose
+FileClose
 ============
 */
-ecode_t FsFClose( file_t* f ) {
+ecode_t FileClose( file_t* f ) {
     ecode_t e;
     assert_not_null( f );
     assert_not_null( f->file );
@@ -59,10 +84,10 @@ ecode_t FsFClose( file_t* f ) {
 
 /*
 ============
-FsFFlush
+FileFlush
 ============
 */
-ecode_t FsFFlush( file_t* f ) {
+ecode_t FileFlush( file_t* f ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( f->fn->flush );
@@ -71,10 +96,10 @@ ecode_t FsFFlush( file_t* f ) {
 
 /*
 ============
-FsFRead
+FileRead
 ============
 */
-size_t FsFRead( void* dst, size_t size, file_t* f ) {
+size_t FileRead( void* dst, size_t size, file_t* f ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( dst );
@@ -84,10 +109,10 @@ size_t FsFRead( void* dst, size_t size, file_t* f ) {
 
 /*
 ============
-FsFWrite
+FileWrite
 ============
 */
-size_t FsFWrite( const void* src, size_t size, file_t* f ) {
+size_t FileWrite( const void* src, size_t size, file_t* f ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( src );
@@ -97,10 +122,10 @@ size_t FsFWrite( const void* src, size_t size, file_t* f ) {
 
 /*
 ============
-FsFGetPos
+FileGetPos
 ============
 */
-ecode_t FsFGetPos( file_t* f, int64_t* pos ) {
+ecode_t FileGetPos( file_t* f, int64_t* pos ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( pos );
@@ -110,10 +135,10 @@ ecode_t FsFGetPos( file_t* f, int64_t* pos ) {
 
 /*
 ============
-FsFSeek
+FileSeek
 ============
 */
-ecode_t FsFSeek( file_t* f, int64_t offset, uint32_t origin ) {
+ecode_t FileSeek( file_t* f, int64_t offset, uint32_t origin ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert( FsFileCheckOrigin(origin) );
@@ -123,10 +148,10 @@ ecode_t FsFSeek( file_t* f, int64_t offset, uint32_t origin ) {
 
 /*
 ============
-FsFSetPos
+FileSetPos
 ============
 */
-ecode_t FsFSetPos( file_t* f, const int64_t* pos ) {
+ecode_t FileSetPos( file_t* f, const int64_t* pos ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( pos );
@@ -136,10 +161,10 @@ ecode_t FsFSetPos( file_t* f, const int64_t* pos ) {
 
 /*
 ============
-FsEOF
+FileEOF
 ============
 */
-bool_t FsEOF( file_t* f ) {
+bool_t FileEOF( file_t* f ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( f->fn->eof );
@@ -148,10 +173,10 @@ bool_t FsEOF( file_t* f ) {
 
 /*
 ============
-FsFSize
+FileSize
 ============
 */
-size_t FsFSize( file_t* f ) {
+size_t FileSize( file_t* f ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( f->fn->size );
@@ -160,10 +185,10 @@ size_t FsFSize( file_t* f ) {
 
 /*
 ============
-FsFTell
+FileTell
 ============
 */
-ssize_t FsFTell( file_t* f ) {
+ssize_t FileTell( file_t* f ) {
     assert_not_null( f );
     assert_not_null( f->file );
     assert_not_null( f->fn->tell );
