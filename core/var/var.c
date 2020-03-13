@@ -8,9 +8,7 @@
 #define VAR_LIM_DELIM   ';'
 #define VAR_MAX 128
 
-var_t vars_g[VAR_MAX];
-
-
+var_t vars_g[VAR_MAX]; 
 
 /*
 ============

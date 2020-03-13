@@ -12,10 +12,6 @@ VAR - global variable system
 */
 
 enum varFlags_t {
-    VAR_TYPE_INT = 1,
-    VAR_TYPE_FLOAT = 2,
-    VAR_TYPE_STRING = 3,
-    
     VAR_INT = 1,
     VAR_FLT = 2,
     VAR_STR = 3,
