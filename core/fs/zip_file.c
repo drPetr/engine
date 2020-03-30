@@ -178,6 +178,30 @@ int ZipCheckProcCD( file_t* zip, const zipCDFileHeader_t* cdfh,
     return 0;
 }
 
+/*
+============
+DosTimeToZipTime
+============
+*/
+void DosTimeToZipTime( uint16_t date, uint16_t time, zipDateTime_t* tm ) {
+    tm->day = date & 0x1f;
+    tm->mon = (date >> 5) & 0xf;
+    tm->year = ((date >> 9) & 0x7f) + 1980;
+    tm->sec = (time & 0x1f) * 2;
+    tm->min = (time >> 5) & 0x3f;
+    tm->hour = (time >> 11) & 0x1f;
+}
+
+/*
+============
+ZipTimeToDosTime
+============
+*/
+void ZipTimeToDosTime( const zipDateTime_t* tm, uint16_t* date, uint16_t* time ) {
+    *date = (tm->day & 0x1f) | ((tm->mon & 0xf) << 5) | (((tm->year - 1980) & 0x7f) << 9);
+    *time = ((tm->sec / 2) & 0x1f) | ((tm->min & 0x3f) << 5) | ((tm->hour & 0x1f) << 11);
+}
+
 
 /*
 ============

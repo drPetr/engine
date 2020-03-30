@@ -2,7 +2,8 @@
 #define __ZIP_H__
 
 #include <core/types.h>
-#include "file.h"
+#include <core/ecode.h>
+#include <core/fs.h>
 
 // dependent document
 // https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
@@ -18,9 +19,9 @@
 #define ZIP_FILE_COMMENT_MAX_LEN    1024
 
 
-
 enum zipCompres_t {
-    ZIP_NO_COMPRESS = 0
+    ZIP_NO_COMPRESS = 0,
+    ZIP_DEFLATE = 8
 };
 
 enum zipFlags_t {
@@ -65,6 +66,15 @@ enum zipFlags_t {
 // fcom  -      file comment
 //
 
+
+typedef struct {
+    int             sec;
+    int             min;
+    int             hour;
+    int             day;
+    int             mon;
+    int             year;
+} zipDateTime_t;
 
 // Local file header (30 bytes)
 typedef struct {
@@ -169,6 +179,28 @@ typedef struct {
 
 
 
+void DosTimeToZipTime( uint16_t date, uint16_t time, zipDateTime_t* tm );
+// date format:
+// 0-4      Day of the month (1–31)
+// 5-8      Month (1 = January, 2 = February, and so on)
+// 9-15     Year offset from 1980 (add 1980 to get actual year)
+// time format:
+// 0-4      Second divided by 2
+// 5-10     Minute (0–59)
+// 11-15    Hour (0–23 on a 24-hour clock) 
+
+void ZipTimeToDosTime( const zipDateTime_t* tm, uint16_t* date, uint16_t* time );
+// date format:
+// 0-4      Day of the month (1–31)
+// 5-8      Month (1 = January, 2 = February, and so on)
+// 9-15     Year offset from 1980 (add 1980 to get actual year)
+// time format:
+// 0-4      Second divided by 2
+// 5-10     Minute (0–59)
+// 11-15    Hour (0–23 on a 24-hour clock)
+
+
+
 ecode_t ZipProcessCD( file_t* zip, fnZipProcCD fnproc, void* userData );
 // process central directory
 // return values:
@@ -194,6 +226,78 @@ ecode_t ZipCheck( file_t* zip );
 void* ZipFirstFile( zipDataInfo_t* dataInfo );
 void* ZipNextFile( void* h );
 */
+
+
+
+
+
+
+
+
+
+
+enum zipOpenMode_t {
+    ZIP_READ        = 0x01,
+    ZIP_WRITE       = 0x02,
+    ZIP_APPEND      = 0x04
+};
+
+
+// zip file structure
+typedef struct {
+    void*               file;   // pointer to the FILE
+    zipEndOfCD_t        eocd;   // end of central directory structure
+    ssize_t             curOffset;  // current offset
+    int                 curNum;     // current file number
+    zipCDFileHeader_t   cdfh;   // current file
+    uint32_t            om;     // open mode
+    bool_t              stop;   
+    bool_t              loaded; // zip file is loaded
+} zipf_t;
+
+
+
+
+
+zipf_t* ZipOpen( const char* zipFile, uint32_t om );
+// open zip file and return pointer to the opened zip file
+
+
+int     ZipClose( zipf_t* zip );
+// close the zip file
+
+
+int     ZipFirstFile( zipf_t* zip );
+// find first file in zip archive
+// return values:
+// E_OK         if the file is found
+// E_NOTFOUND   if the file is not found
+
+
+int     ZipNextFile( zipf_t* zip );
+// find next file in zip archive
+// return values:
+// E_OK         if the next file is found
+// E_NOTFOUND   if there are no more files
+
+
+ssize_t ZipGetCurrentFileName( zipf_t* zip, char* name, size_t maxSize );
+// copy file name to string 'name'
+// return values:
+// -1           if the file is no selected
+// size         copied row size
+
+
+ssize_t ZipTotalFiles( zipf_t* zip );
+// return the total number of files in zip
+// return values:
+// -1           if there was an error
+// size         number of files in zip
+
+
+
+
+
 
 
 #endif //__ZIP_H__
