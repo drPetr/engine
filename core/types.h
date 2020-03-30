@@ -10,6 +10,7 @@ uint8_t uint16_t uint32_t uint64_t
 */
 #include <stdint.h>
 #include <limits.h>
+#include <sys/types.h>  // fix for size_t and ssize_t types
 
 /*
 included for next types:
