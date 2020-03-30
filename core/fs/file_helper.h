@@ -3,7 +3,6 @@
 
 #include <core/fs.h>
 
-
 file_t*     FsFileAllocate( void );
 
 void        FsFileDeallocate( file_t* f );

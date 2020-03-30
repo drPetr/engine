@@ -29,30 +29,30 @@ FsFileCheckFlags
 ============
 */
 bool_t FsFileCheckFlags( uint32_t flags ) {
-    uint8_t type;
-    bool_t fRead;
-    bool_t fWrite;
-    bool_t fAppend;
+    uint32_t type;
+    uint32_t mode;
     
     // extract parameters
     type = flags & F_TYPE_MASK;
-    fRead = !!(flags & F_READ);
-    fWrite = !!(flags & F_WRITE);
-    fAppend = !!(flags & F_APPEND);
+    mode = flags & F_MODE_MASK;
     
     // check type
     switch( type ) {
         case F_LOCAL:
-        //case F_MEMORY:
         case F_INNER:
             break;
         default:
             return bfalse;
     }
     
-    // check only one alternative
-    if( (fRead + fWrite + fAppend) != 1 ) {
-        return bfalse;
+    // check mode
+    switch( mode ) {
+        case F_READ:
+        case F_WRITE:
+        case F_APPEND:
+            break;
+        default:
+            return bfalse;
     }
     
     return btrue;
