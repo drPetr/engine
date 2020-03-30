@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <core/fs.h>
 #include <core/debug.h>
+#include <core/tree.h>
  
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 void EnableOpenGL(HWND hwnd, HDC*, HGLRC*);
@@ -406,7 +407,7 @@ gonext:
 
 
 
-
+/*
 
 void PrintZipLocalHeader( zipLocalHeader_t* h ) {
     // uint32_t        signature;      // local file header signature (0x04034b50)
@@ -452,12 +453,12 @@ void PrintEndOfCD( zipEndOfCD_t* e ) {
     printf( "comLen: %u\n", e->comLen );
 }
 
-
+*/
 /*
 ============
 ZipProc
 ============
-*/
+*//*
 int ZipProc( file_t* f, const zipLocalHeader_t* lfh, ssize_t offset, 
             const char* fileName, const char* extra, void* userData ) {
     
@@ -466,36 +467,228 @@ int ZipProc( file_t* f, const zipLocalHeader_t* lfh, ssize_t offset,
     return 0;
 }
 
+#include <core/string.h>
+#include <core/assert.h>
+
+tree_t* TreeNewNode( const char* str ) {
+    tree_t* node = TreeNodeAllocate( MemDefaultAlloc(), StrLen( str ) + 1 );
+    StrCpy( (char*)node->data, str );
+    return node;
+}
+
+        // node, node data, user data
+typedef int(*fnTreeOrder)(tree_t*,void*,void*);
 
 
+typedef struct {
+    fnTreeOrder     fnOrder;
+    int             depth;
+    int             curDepth;
+    void*           userData;
+} treeOrder_t;
+
+
+int TreePreOrderProcess_r( tree_t* node, treeOrder_t* info ) {
+    info->fnOrder( node, (void*)node->data, info->userData );
+    if( node->firstChild ) {
+        TreePreOrderProcess_r( node->firstChild, info );
+    }
+    if( node->next ) {
+        TreePreOrderProcess_r( node->next, info );
+    }
+    return 0;
+}
+
+
+void TreePreOrder( tree_t* node, fnTreeOrder fnOrder, void* userData ) {
+    treeOrder_t info;
+    info.fnOrder = fnOrder;
+    info.depth = 0;
+    info.curDepth = 0;
+    info.userData = userData;
+    
+    assert( fnOrder );
+    
+    TreePreOrderProcess_r( node, &info );
+}
+
+
+int TreeOrderFunc( tree_t* node, void* data, void* userData ) {
+    printf( "%s\n", ((char*)data) );
+    return 0;
+}
+
+
+
+#include <stdio.h>
+
+*/
+
+#include <core/core.h>
+#include <core/fs/zip.h>
+#include <core/fs/fs_tree.h>
+#include <core/common.h>
+#include <core/fs/dir_tree.h>
+#include <core/alloc.h>
+
+#define M_UINT64        0xffffffffffffffff
+
+char _str_for_printf[1024];
+
+char* print_hex( uint8_t* b, size_t bytes ) {
+    char* str = _str_for_printf;
+    b += bytes-1;
+    while( bytes ) {
+        sprintf( str, "%.2x", *b );
+        b--;
+        str += 2;
+        bytes--;
+    }
+    *str = 0;
+    return _str_for_printf;
+}
+
+char* print_size_t( size_t num ) {
+    return print_hex( (uint8_t*)&num, 8 );
+}
+
+void* BAlcAllocateBlock( uint64_t num ) {
+    uint64_t submask = M_UINT64;
+    uint64_t mask;
+    uint8_t bits = 32;
+    uint8_t shift = 0;
+        
+    do {
+        submask >>= bits;
+        mask = submask << shift;
+        
+        
+        
+        if( (num & mask) == mask ) {
+            shift += bits;
+        }
+        
+        bits >>= 1;
+        
+        printf( "%d\n", (int)shift );
+        printf( "  0x%s\n", print_size_t(mask) );
+        
+    } while( bits );
+    
+    if( num & mask ) {
+        return NULL;
+    }
+    
+    
+    return NULL;
+}
+
+#include <core/bin_tree.h>
+
+typedef struct {
+    binTree_t       bt;
+    char*           str;
+} myData_t;
+
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+
+
+myData_t* MyCreate( const char* str ) {
+    size_t size;
+    myData_t* node;
+    node = malloc( sizeof(myData_t) );
+    BinTreeNodeSetToNULL( node );
+    
+    size = strlen( str ) + 1;
+    node->str = malloc( size );
+    strcpy( node->str, str );
+    return node;
+}
+
+int Order( void* data, void* userData ) {
+    char* str = *((char**)data);
+    printf( "%s\n", str );
+    return 0;
+}
+
+int Delete( void* data, void* userData ) {
+    char* str = *((char**)data);
+    free( str );
+    free( ((char*)data) - BIN_TREE_DATA_OFFSET );
+    return 0;
+}
 
 
 int main( int argc, char** argv ) {
-    file_t* file;
-    file_t* f;
-    ecode_t e;
+    //uint64_t num = 0xffffffffffffffff;
+    //printf( "num: 0x%s\n", print_size_t(num) );
+    //BAlcAllocateBlock( num );
+    tree_t* root;
     
-    // open the file
-    if( NULL == (file = FileOpen( "data/test.zip", F_LOCAL | F_READ | F_BINARY )) ) {
-        printf( "error: cannot open file 'data/test.zip'\n" );
-        return 0;
-    }
     
-    // open the file
-    if( NULL == (f = FileOpen( "data/test.zip", F_LOCAL | F_READ | F_BINARY )) ) {
-        printf( "error: cannot open file 2 'data/test.zip'\n" );
-        return 0;
-    }
+    //CoreInit();
+    /*
+    FsTreeAppendArchive( "data/test.pk" );
+    FsTreeAppendArchive( "data/data.pk" );
     
-    if( E_OK != (e = ZipCheck( file )) ) {
-        printf( "e_error: %d\n", e );
-    }
-    if( E_OK != (e = ZipProcess( file, ZipProc, NULL )) ) {
-        printf( "e_error: %d\n", e );
-    }
+
     
-    FileClose( file );
-    FileClose( f );
+    FsTreePrintLoadedArchives();
+    //FsTreeOrder();
+    */
+    /*
+    dirTree_t dir;
+    dirNode_t* root;
+    dirNode_t* node;
+    char str[1234];
+    
+    root = DTCreateRoot( &dir, GetFsTreeAllocator(), GetFsTreeAllocator(), "data/" );
+    
+    
+    //DTAppend( root, "ino/123/zxv/dadgad/234/asdf" );
+    //DTAppend( root, "ino/123/zxv/dadgad/234/1/" );
+    node = DTAppend( root, "ino/123/zxv/dadgad/234/" );
+    DTAppend( node, "1" );
+    DTAppend( node, "2" );
+    DTAppend( node, "3" );
+    DTAppend( node, "4" );
+    DTAppend( node, "5" );
+    DTAppend( node, "6" );
+    DTAppend( node, "7" );
+    DTAppend( node, "8" );
+    DTAppend( node, "9" );
+    DTAppend( node, "0" );
+    
+    
+    DTAppend( root, "ino/123/1/dadgad/234/asdf" );
+    DTAppend( root, "ino/123/1/dadgad/ffd/asdf/" );
+    node = DTAppend( root, "ino/123/1/dadgad/ffd/asdf/8/dfg/1325/hds/146532/a/d/4/f/fsdg3/aas" );
+    
+    node = DTFindFromRoot( node, "ino/123/zxv/dadgad/" );
+    
+    size_t sz;
+    StrCpy( str, "NOT FOUND" );
+    sz = DTArchivePath( node, str, sizeof(str) );
+    
+    printf( "  %s\n", str );
+    printf( "  size: %d\n", (int)sz );
+    
+    DTPrintSubtree( root, str, 0 );
+    
+    DTFree( root );
+    
+    CoreShutdown();
+    */
+    
+    
+    
+    
+    
+    
     
     return 0;
 }
