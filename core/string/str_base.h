@@ -5,13 +5,6 @@
 #include <core/ecode.h>
 
 
-
-char*   StrCreate( const char* s );
-// allocate memory for string and copy string
-
-void    StrDelete( char* s );
-// deallocate string memory and delete string
-
 int     StrCmp( const char* s1, const char* s2 );
 // compare two string and return -1 if s1 is less than s2,
 // or 1 if s1 is more than s2, or 0 if s1 is equal to s2
@@ -23,6 +16,9 @@ int     StrNCmp( const char* s1, const char* s2, size_t num );
 
 char*   StrCpy( char* dst, const char* src );
 // copy string from src to dst
+
+char*   StrNCpy( char* dst, const char* src, size_t size ) ;
+// copy 'size' bytes the string from src to dst
 
 size_t  StrLen( const char* str );
 // return length of the string

@@ -1,34 +1,11 @@
 #include "str_base.h"
 
-#include <core/memory.h>
 #include <core/assert.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 
 
-/*
-============
-StrCreate
-============
-*/
-char* StrCreate( const char* s ) {
-    char* ret;
-    assert( s );
-    ret = MemStringAlloc()->alloc( StrLen( s ) + 1 );
-    StrCpy( ret, s );
-    return ret;
-}
-
-/*
-============
-StrDelete
-============
-*/
-void StrDelete( char* s ) {
-    assert( s );
-    MemStringAlloc()->dealloc( s );
-}
 
 /*
 ============
@@ -55,6 +32,15 @@ StrCpy
 */
 char* StrCpy( char* dst, const char* src ) {
     return strcpy( dst, src );
+}
+
+/*
+============
+StrNCpy
+============
+*/
+char* StrNCpy( char* dst, const char* src, size_t size ) {
+    return strncpy( dst, src, size );
 }
 
 /*
