@@ -1,7 +1,7 @@
 #ifndef __MEMORY_H__
 #define __MEMORY_H__
 
-#include <core/memory/mem_alloc.h>
+#include <core/types.h>
 
 // copy memory from src to dst
 void* MemCpy( void* dst, const void* src, size_t size );
