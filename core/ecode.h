@@ -13,7 +13,8 @@ typedef enum {
     E_UNKFF,            // unknown file format
     E_NORDF,            // no data to read from file
     E_READ,             // read error (from file, from memory...)
-    E_UNKCODE           // unknown code (use in callback functions that return specific values)
+    E_UNKCODE,          // unknown code (use in callback functions that return specific values)
+    E_NOTFOUND          // value/file not found
 } ecode_t;
 
 #define OK      E_OK

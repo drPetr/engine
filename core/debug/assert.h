@@ -8,13 +8,15 @@ void __impl_verifya( int e, const char* expr, const char* file, int line, const 
 
 
 #if defined(DEBUG) || defined(_DEBUG)
-    #define assert(e)
-    #define asserta(e,a,...)
-    #define assert_not_null(e)
-#else
     #define assert(e) __impl_assert( (int)(!!(e)), #e, __FILE__, __LINE__ )
     #define asserta(e,a,...) __impl_asserta( (int)(!!(e)), #e, __FILE__, __LINE__, a, ##__VA_ARGS__ )
     #define assert_not_null(e) __impl_asserta( (int)(!!(e)), #e, __FILE__, __LINE__, "%s", "pointer cannot be null" )
+    #define assert_is_null(e) __impl_asserta( (int)(!(e)), #e, __FILE__, __LINE__, "%s", "pointer must be null" )
+#else
+    #define assert(e)
+    #define asserta(e,a,...)
+    #define assert_not_null(e)
+    #define assert_is_null(e)
 #endif
 
 #define verify(e) __impl_verify( (int)(!!(e)), #e, __FILE__, __LINE__ )
