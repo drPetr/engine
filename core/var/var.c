@@ -1,7 +1,7 @@
 #include <core/var.h>
 
 #include <core/assert.h>
-#include <core/memory.h>
+#include <core/alloc.h>
 #include <core/string.h>
 #include <core/math.h>
 
@@ -17,7 +17,7 @@ CreateVarString
 */
 static char* CreateVarString( const char* s ) {
     char* str;
-    str = (char*)MemStringAlloc()->alloc( StrLen(s) + 1 );
+    str = (char*)GetVarStringsAllocator()->allocate( StrLen(s) + 1 );
     StrCpy( str, s );
     return str;
 }
@@ -28,7 +28,7 @@ DeleteVarString
 ============
 */
 static void DeleteVarString( char* s ) {
-    MemStringAlloc()->dealloc( s );
+    GetVarStringsAllocator()->deallocate( s );
 }
 
 /*
